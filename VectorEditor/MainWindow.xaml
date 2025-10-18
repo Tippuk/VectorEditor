@@ -1,0 +1,32 @@
+﻿<Window x:Class="VectorEditor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WPF Vector Editor" Height="600" Width="900">
+    <DockPanel>
+        <ToolBar DockPanel.Dock="Top">
+            <!-- NEW: toolbar skeleton -->
+            <Button Content="Rect" />
+            <Button Content="Ellipse" />
+            <Button Content="Polygon" />
+            <Separator/>
+            <Button Content="Save"/>
+            <Button Content="Load"/>
+        </ToolBar>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="260"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="6">
+                <Canvas x:Name="DrawingCanvas" Background="White"/>
+            </Border>
+
+            <StackPanel Grid.Column="1" Margin="6">
+                <TextBlock FontWeight="Bold" Text="Inspector"/>
+                <TextBlock Text="(empty)" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</Window>
