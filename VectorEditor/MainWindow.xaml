@@ -4,7 +4,6 @@
         Title="WPF Vector Editor" Height="600" Width="900">
     <DockPanel>
         <ToolBar DockPanel.Dock="Top">
-            <!-- NEW: toolbar skeleton -->
             <Button Content="Rect" />
             <Button Content="Ellipse" />
             <Button Content="Polygon" />

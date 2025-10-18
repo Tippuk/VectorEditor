@@ -1,12 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Windows.Media;
+using System.Windows.Shapes;
 
-namespace WpfApp3.Models
+namespace VectorEditor.Models
 {
-    internal class EllipseShape
+    public class EllipseShape : BaseShape
     {
+        public override Shape ToUIElement()
+        {
+            var e = new Ellipse
+            {
+                Width = Width,
+                Height = Height,
+                Fill = new SolidColorBrush(Fill),
+                Stroke = new SolidColorBrush(StrokeColor),
+                StrokeThickness = StrokeThickness
+            };
+            return e;
+        }
     }
 }

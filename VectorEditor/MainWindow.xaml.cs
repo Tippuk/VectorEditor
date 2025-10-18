@@ -1,5 +1,4 @@
-﻿// NEW: basic window code-behind
-using System.Windows;
+﻿using System.Windows;
 
 namespace VectorEditor
 {
