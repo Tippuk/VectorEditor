@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Microsoft.Win32;
 using VectorEditor.Models;
 
 namespace VectorEditor
@@ -20,6 +23,7 @@ namespace VectorEditor
         private BaseShape currentDrawingShape;
         private string currentShapeType = "Rect";
         private Color currentColor = Colors.LightBlue;
+        private const string DefaultSavePath = "drawing.json";
 
         public MainWindow()
         {
@@ -48,6 +52,7 @@ namespace VectorEditor
             UpdateInspector();
         }
 
+
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             Point pos = e.GetPosition(DrawingCanvas);
@@ -55,7 +60,7 @@ namespace VectorEditor
             isMoving = false;
             isDrawing = false;
 
-            // 🔹 Проверяем, попали ли по существующей фигуре (сверху вниз)
+            // Проверяем верхнюю фигуру
             for (int i = shapes.Count - 1; i >= 0; i--)
             {
                 BaseShape s = shapes[i];
@@ -65,7 +70,6 @@ namespace VectorEditor
                     isMoving = true;
                     moveStart = pos;
 
-                    // Помещаем выбранную фигуру наверх (в конец списка)
                     shapes.Remove(s);
                     shapes.Add(s);
 
@@ -74,7 +78,7 @@ namespace VectorEditor
                 }
             }
 
-            // 🔹 Если не попали — начинаем рисование новой фигуры
+            // Начинаем рисование
             isDrawing = true;
             startPoint = pos;
 
@@ -99,7 +103,6 @@ namespace VectorEditor
         {
             Point pos = e.GetPosition(DrawingCanvas);
 
-            // 🔸 Рисование
             if (isDrawing && currentDrawingShape != null && e.LeftButton == MouseButtonState.Pressed)
             {
                 currentDrawingShape.X = Math.Min(startPoint.X, pos.X);
@@ -109,7 +112,6 @@ namespace VectorEditor
                 RedrawCanvas();
             }
 
-            // 🔸 Перемещение
             if (isMoving && selectedShape != null && e.LeftButton == MouseButtonState.Pressed)
             {
                 double dx = pos.X - moveStart.X;
@@ -123,11 +125,11 @@ namespace VectorEditor
 
         private void Canvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            // Завершаем действие
             isDrawing = false;
             isMoving = false;
             currentDrawingShape = null;
         }
+
 
         private void RectButton_Click(object sender, RoutedEventArgs e)
         {
@@ -142,15 +144,6 @@ namespace VectorEditor
         private void PolygonButton_Click(object sender, RoutedEventArgs e)
         {
             currentShapeType = "Polygon";
-        }
-
-        private void ColorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            ComboBoxItem item = ColorComboBox.SelectedItem as ComboBoxItem;
-            if (item != null)
-            {
-                currentColor = (Color)ColorConverter.ConvertFromString(item.Content.ToString());
-            }
         }
 
         private void ApplyChanges_Click(object sender, RoutedEventArgs e)
@@ -170,6 +163,87 @@ namespace VectorEditor
 
             RedrawCanvas();
         }
+
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.Filter = "JSON files (*.json)|*.json";
+            dlg.FileName = "drawing.json";
+            if (dlg.ShowDialog() == true)
+            {
+                SaveToJson(dlg.FileName);
+            }
+        }
+
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "JSON files (*.json)|*.json";
+            if (dlg.ShowDialog() == true)
+            {
+                LoadFromJson(dlg.FileName);
+            }
+        }
+
+        private void SaveToJson(string path)
+        {
+            List<ShapeData> data = new List<ShapeData>();
+            foreach (BaseShape s in shapes)
+            {
+                ShapeData d = new ShapeData();
+                d.Type = s.GetType().Name;
+                d.X = s.X;
+                d.Y = s.Y;
+                d.Width = s.Width;
+                d.Height = s.Height;
+                d.Fill = s.Fill.ToString();
+                data.Add(d);
+            }
+
+            string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(path, json);
+        }
+
+        private void LoadFromJson(string path)
+        {
+            if (!File.Exists(path)) return;
+
+            string json = File.ReadAllText(path);
+            List<ShapeData> data = JsonSerializer.Deserialize<List<ShapeData>>(json);
+
+            shapes.Clear();
+
+            foreach (ShapeData d in data)
+            {
+                BaseShape shape;
+                if (d.Type == "EllipseShape")
+                    shape = new EllipseShape();
+                else if (d.Type == "PolygonShape")
+                    shape = new PolygonShape();
+                else
+                    shape = new RectangleShape();
+
+                shape.X = d.X;
+                shape.Y = d.Y;
+                shape.Width = d.Width;
+                shape.Height = d.Height;
+
+                try
+                {
+                    shape.Fill = (Color)ColorConverter.ConvertFromString(d.Fill);
+                }
+                catch
+                {
+                    shape.Fill = Colors.LightBlue;
+                }
+
+                shapes.Add(shape);
+            }
+
+            RedrawCanvas();
+        }
+
 
         private void UpdateInspector()
         {
@@ -200,5 +274,15 @@ namespace VectorEditor
                 RedrawCanvas();
             }
         }
+    }
+
+    public class ShapeData
+    {
+        public string Type { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public string Fill { get; set; }
     }
 }

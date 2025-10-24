@@ -8,42 +8,43 @@
             <Button Content="Ellipse" Click="EllipseButton_Click"/>
             <Button Content="Polygon" Click="PolygonButton_Click"/>
             <Separator/>
-            <TextBlock Text="Fill:" VerticalAlignment="Center" Margin="5,0"/>
-            <ComboBox x:Name="ColorComboBox" Width="80" SelectionChanged="ColorComboBox_SelectionChanged">
-                <ComboBoxItem Content="LightBlue" IsSelected="True"/>
-                <ComboBoxItem Content="Red"/>
-                <ComboBoxItem Content="Green"/>
-                <ComboBoxItem Content="Yellow"/>
-                <ComboBoxItem Content="Gray"/>
-            </ComboBox>
+            <Button Content="Save" Click="SaveButton_Click"/>
+            <Button Content="Load" Click="LoadButton_Click"/>
         </ToolBar>
 
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="260"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="6">
                 <Canvas x:Name="DrawingCanvas" Background="White"/>
             </Border>
 
-            <!-- Inspector -->
-            <StackPanel Grid.Column="1" Margin="10">
-                <TextBlock FontWeight="Bold" FontSize="14" Text="Inspector" Margin="0,0,0,10"/>
-
-                <TextBlock Text="X:"/>
-                <TextBox x:Name="XBox" Text="0"/>
-                <TextBlock Text="Y:"/>
-                <TextBox x:Name="YBox" Text="0"/>
-                <TextBlock Text="Width:"/>
-                <TextBox x:Name="WidthBox" Text="0"/>
-                <TextBlock Text="Height:"/>
-                <TextBox x:Name="HeightBox" Text="0"/>
-                <TextBlock Text="Fill Color:"/>
-                <TextBox x:Name="FillBox" Text="LightBlue"/>
-
-                <Button Content="Apply" Margin="0,10,0,0" Click="ApplyChanges_Click"/>
+            <StackPanel Grid.Column="1" Margin="6">
+                <TextBlock FontWeight="Bold" Text="Inspector"/>
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <TextBlock Text="X:" Width="30"/>
+                    <TextBox x:Name="XBox" Width="80"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="Y:" Width="30"/>
+                    <TextBox x:Name="YBox" Width="80"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="Width:" Width="50"/>
+                    <TextBox x:Name="WidthBox" Width="80"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="Height:" Width="50"/>
+                    <TextBox x:Name="HeightBox" Width="80"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="Fill:" Width="50"/>
+                    <TextBox x:Name="FillBox" Width="80"/>
+                </StackPanel>
+                <Button Content="Apply" Margin="0,6,0,0" Click="ApplyChanges_Click"/>
             </StackPanel>
         </Grid>
     </DockPanel>
