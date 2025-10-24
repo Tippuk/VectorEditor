@@ -55,20 +55,26 @@ namespace VectorEditor
             isMoving = false;
             isDrawing = false;
 
-            // Проверяем, попали ли по существующей фигуре
-            foreach (BaseShape s in shapes)
+            // 🔹 Проверяем, попали ли по существующей фигуре (сверху вниз)
+            for (int i = shapes.Count - 1; i >= 0; i--)
             {
+                BaseShape s = shapes[i];
                 if (s.Contains(pos))
                 {
                     selectedShape = s;
                     isMoving = true;
                     moveStart = pos;
+
+                    // Помещаем выбранную фигуру наверх (в конец списка)
+                    shapes.Remove(s);
+                    shapes.Add(s);
+
                     RedrawCanvas();
                     return;
                 }
             }
 
-            // Начинаем рисование новой фигуры
+            // 🔹 Если не попали — начинаем рисование новой фигуры
             isDrawing = true;
             startPoint = pos;
 
@@ -93,7 +99,7 @@ namespace VectorEditor
         {
             Point pos = e.GetPosition(DrawingCanvas);
 
-            // Рисование
+            // 🔸 Рисование
             if (isDrawing && currentDrawingShape != null && e.LeftButton == MouseButtonState.Pressed)
             {
                 currentDrawingShape.X = Math.Min(startPoint.X, pos.X);
@@ -103,7 +109,7 @@ namespace VectorEditor
                 RedrawCanvas();
             }
 
-            // Перемещение
+            // 🔸 Перемещение
             if (isMoving && selectedShape != null && e.LeftButton == MouseButtonState.Pressed)
             {
                 double dx = pos.X - moveStart.X;
@@ -117,7 +123,7 @@ namespace VectorEditor
 
         private void Canvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            // Отпустили кнопку — завершаем любое действие
+            // Завершаем действие
             isDrawing = false;
             isMoving = false;
             currentDrawingShape = null;
