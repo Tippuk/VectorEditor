@@ -10,6 +10,9 @@
             <Separator/>
             <Button Content="Save" Click="SaveButton_Click"/>
             <Button Content="Load" Click="LoadButton_Click"/>
+            <Separator/>
+            <Button Content="Undo" Click="UndoButton_Click"/>
+            <Button Content="Redo" Click="RedoButton_Click"/>
         </ToolBar>
 
         <Grid>

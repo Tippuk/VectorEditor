@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Microsoft.Win32;
+using VectorEditor.Commands;
 using VectorEditor.Models;
 
 namespace VectorEditor
@@ -19,16 +20,22 @@ namespace VectorEditor
         private bool isMoving = false;
         private Point startPoint;
         private Point moveStart;
+        private Point moveOriginalPos;
         private BaseShape selectedShape;
         private BaseShape currentDrawingShape;
         private string currentShapeType = "Rect";
         private Color currentColor = Colors.LightBlue;
         private const string DefaultSavePath = "drawing.json";
 
+        private Stack<IEditorCommand> undoStack;
+        private Stack<IEditorCommand> redoStack;
+
         public MainWindow()
         {
             InitializeComponent();
             shapes = new List<BaseShape>();
+            undoStack = new Stack<IEditorCommand>();
+            redoStack = new Stack<IEditorCommand>();
 
             DrawingCanvas.MouseLeftButtonDown += Canvas_MouseDown;
             DrawingCanvas.MouseMove += Canvas_MouseMove;
@@ -60,7 +67,6 @@ namespace VectorEditor
             isMoving = false;
             isDrawing = false;
 
-            // Проверяем верхнюю фигуру
             for (int i = shapes.Count - 1; i >= 0; i--)
             {
                 BaseShape s = shapes[i];
@@ -69,16 +75,16 @@ namespace VectorEditor
                     selectedShape = s;
                     isMoving = true;
                     moveStart = pos;
+                    moveOriginalPos = new Point(s.X, s.Y);
 
-                    shapes.Remove(s);
-                    shapes.Add(s);
+                    shapes.RemoveAt(i);
+                    shapes.Add(selectedShape);
 
                     RedrawCanvas();
                     return;
                 }
             }
 
-            // Начинаем рисование
             isDrawing = true;
             startPoint = pos;
 
@@ -125,9 +131,35 @@ namespace VectorEditor
 
         private void Canvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (isDrawing && currentDrawingShape != null)
+            {
+                if (currentDrawingShape.Width <= 0 || currentDrawingShape.Height <= 0)
+                {
+                    shapes.Remove(currentDrawingShape);
+                }
+                else
+                {
+                    IEditorCommand cmd = new CreateCommand(currentDrawingShape, shapes);
+                    undoStack.Push(cmd);
+                    redoStack.Clear();
+                }
+                currentDrawingShape = null;
+            }
+
+            if (isMoving && selectedShape != null)
+            {
+                Point newPos = new Point(selectedShape.X, selectedShape.Y);
+                if (moveOriginalPos.X != newPos.X || moveOriginalPos.Y != newPos.Y)
+                {
+                    IEditorCommand cmd = new MoveCommand(selectedShape, moveOriginalPos.X, moveOriginalPos.Y, newPos.X, newPos.Y);
+                    undoStack.Push(cmd);
+                    redoStack.Clear();
+                }
+            }
+
             isDrawing = false;
             isMoving = false;
-            currentDrawingShape = null;
+            RedrawCanvas();
         }
 
 
@@ -146,21 +178,23 @@ namespace VectorEditor
             currentShapeType = "Polygon";
         }
 
-        private void ApplyChanges_Click(object sender, RoutedEventArgs e)
+        private void UndoButton_Click(object sender, RoutedEventArgs e)
         {
-            if (selectedShape == null) return;
-            double x, y, w, h;
-            if (double.TryParse(XBox.Text, out x)) selectedShape.X = x;
-            if (double.TryParse(YBox.Text, out y)) selectedShape.Y = y;
-            if (double.TryParse(WidthBox.Text, out w)) selectedShape.Width = w;
-            if (double.TryParse(HeightBox.Text, out h)) selectedShape.Height = h;
+            if (undoStack.Count == 0) return;
+            IEditorCommand cmd = undoStack.Pop();
+            cmd.Unexecute();
+            redoStack.Push(cmd);
+            selectedShape = null;
+            RedrawCanvas();
+        }
 
-            try
-            {
-                selectedShape.Fill = (Color)ColorConverter.ConvertFromString(FillBox.Text);
-            }
-            catch { }
-
+        private void RedoButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (redoStack.Count == 0) return;
+            IEditorCommand cmd = redoStack.Pop();
+            cmd.Execute();
+            undoStack.Push(cmd);
+            selectedShape = null;
             RedrawCanvas();
         }
 
@@ -183,6 +217,8 @@ namespace VectorEditor
             if (dlg.ShowDialog() == true)
             {
                 LoadFromJson(dlg.FileName);
+                undoStack.Clear();
+                redoStack.Clear();
             }
         }
 
@@ -245,6 +281,44 @@ namespace VectorEditor
         }
 
 
+        private void ApplyChanges_Click(object sender, RoutedEventArgs e)
+        {
+            if (selectedShape == null) return;
+
+            double oldX = selectedShape.X;
+            double oldY = selectedShape.Y;
+            double oldW = selectedShape.Width;
+            double oldH = selectedShape.Height;
+            string oldFill = selectedShape.Fill.ToString();
+
+            double x, y, w, h;
+            if (double.TryParse(XBox.Text, out x)) selectedShape.X = x;
+            if (double.TryParse(YBox.Text, out y)) selectedShape.Y = y;
+            if (double.TryParse(WidthBox.Text, out w)) selectedShape.Width = w;
+            if (double.TryParse(HeightBox.Text, out h)) selectedShape.Height = h;
+
+            try
+            {
+                selectedShape.Fill = (Color)ColorConverter.ConvertFromString(FillBox.Text);
+            }
+            catch { }
+
+            double newX = selectedShape.X;
+            double newY = selectedShape.Y;
+            double newW = selectedShape.Width;
+            double newH = selectedShape.Height;
+            string newFill = selectedShape.Fill.ToString();
+
+            if (oldX != newX || oldY != newY || oldW != newW || oldH != newH || oldFill != newFill)
+            {
+                IEditorCommand cmd = new PropertyChangeCommand(selectedShape, oldX, oldY, oldW, oldH, oldFill, newX, newY, newW, newH, newFill);
+                undoStack.Push(cmd);
+                redoStack.Clear();
+            }
+
+            RedrawCanvas();
+        }
+
         private void UpdateInspector()
         {
             if (selectedShape == null)
@@ -269,7 +343,11 @@ namespace VectorEditor
             base.OnKeyDown(e);
             if (e.Key == Key.Delete && selectedShape != null)
             {
-                shapes.Remove(selectedShape);
+                IEditorCommand cmd = new DeleteCommand(selectedShape, shapes);
+                cmd.Execute();
+                undoStack.Push(cmd);
+                redoStack.Clear();
+
                 selectedShape = null;
                 RedrawCanvas();
             }
